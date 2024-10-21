@@ -7,7 +7,7 @@ namespace ServerApp
     public class ChatServer
     {
         const short port = 4040;
-        const string address = "127.0.0.1"; 
+        const string address = "10.10.36.102"; 
         TcpListener listener = null;
         IPEndPoint clientEndPoint = null;
        
