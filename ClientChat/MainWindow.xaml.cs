@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Configuration;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -21,7 +22,10 @@ namespace ClientChat
     public partial class MainWindow : Window
     {
         IPEndPoint serverEndPoint;
-        UdpClient client ;
+        TcpClient client ;
+        NetworkStream ns = null;
+        StreamReader reader = null;
+        StreamWriter writer = null;
         //const string serverAddress = "127.0.0.1";   
         //const short serverPort = 4040;   
         ObservableCollection<MessageInfo> messages = new ObservableCollection<MessageInfo>();   
@@ -29,41 +33,54 @@ namespace ClientChat
         {
             InitializeComponent();
             this.DataContext = messages; 
-            client = new UdpClient();
+            client = new TcpClient();
             string address = ConfigurationManager.AppSettings["ServerAddress"]!;
             short port = short.Parse( ConfigurationManager.AppSettings["ServerPort"]!);
             serverEndPoint = new IPEndPoint(IPAddress.Parse(address), port);
    
         }
 
-        private void Leave_Button_Click(object sender, RoutedEventArgs e)
+        private void Disconnect_Button_Click(object sender, RoutedEventArgs e)
         {
-
+            ns.Close();
+            client.Close(); 
         }
 
-        private void Join_Button_Click(object sender, RoutedEventArgs e)
+        private void Connect_Button_Click(object sender, RoutedEventArgs e)
         {
-            string message = "$<join>";
-            SendMessage(message);
-            Listen();
+            //string message = "$<join>";
+            //SendMessage(message);
+            //Listen();
+            try
+            {
+                client.Connect(serverEndPoint);
+                ns = client.GetStream();
+                reader = new StreamReader(ns);  
+                writer = new StreamWriter(ns);  
+                Listen();
+            }
+            catch (Exception ex)
+            {
+
+                MessageBox.Show(ex.Message);
+            }
+          
         }
 
         private void Send_Button_Click(object sender, RoutedEventArgs e)
         {           
             string message = msgTextBox.Text;
-            SendMessage(message);
+            writer.WriteLine(message);  
+            writer.Flush();
+           // SendMessage(message);
         }
-        private async void SendMessage(string message)
-        {
-            byte[] data = Encoding.UTF8.GetBytes(message);
-            await client.SendAsync(data, data.Length, serverEndPoint);
-        }
+      
         private async void Listen()
         {
             while (true)
             {
-                var data = await client.ReceiveAsync();
-                string message = Encoding.UTF8.GetString(data.Buffer);
+
+                string? message = await reader.ReadLineAsync();                   
                 messages.Add(new MessageInfo(message, DateTime.Now));
             }
         }

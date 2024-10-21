@@ -10,7 +10,7 @@ namespace ClientChat
     {
         public string Text { get; set; }
         public DateTime Time { get; set; }
-        public MessageInfo(string text, DateTime time)
+        public MessageInfo(string? text, DateTime time)
         {
             Text = text;    
             Time = time;    

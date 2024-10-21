@@ -7,48 +7,35 @@ namespace ServerApp
     public class ChatServer
     {
         const short port = 4040;
-        const string JOIN_CMD = "$<join>";
-        UdpClient server;
+        const string address = "127.0.0.1"; 
+        TcpListener listener = null;
         IPEndPoint clientEndPoint = null;
-        List<IPEndPoint> members ;
+       
         public ChatServer()
         {
-            server = new UdpClient(port);
-            members = new List<IPEndPoint>();
+            listener =new TcpListener(new IPEndPoint(IPAddress.Parse(address), port));  
+
         }
         public void Start()
         {
+            listener.Start();
+            Console.WriteLine("Waiting for connection");
+            TcpClient client =  listener.AcceptTcpClient();
+            Console.WriteLine("Connection");
+            NetworkStream ns =  client.GetStream();
+            StreamReader reader = new StreamReader(ns); 
+            StreamWriter writer = new StreamWriter(ns); 
             while (true)
-            {
-
-                byte[] data = server.Receive(ref clientEndPoint);
-                string message = Encoding.UTF8.GetString(data);
-                Console.WriteLine($"Message : {message} from : {clientEndPoint}. " +
-                    $"Date : {DateTime.Now.ToShortTimeString()}");
-
-                switch (message)
-                {
-                    case JOIN_CMD:
-                        AddMember(clientEndPoint);                        
-                        break;                       
-                    default:
-                        SendToAll(data);
-                        break;
-                }
+            {               
+                string message = reader.ReadLine(); 
+                Console.WriteLine($"Message : {message} from : {client.Client.LocalEndPoint}. " +
+                    $"Date : {DateTime.Now.ToShortTimeString()}"); 
+                
+                writer.WriteLine("Thanks!!!!");
+                writer.Flush(); 
             }
         }
-        private void AddMember(IPEndPoint member)
-        {
-            members.Add(member);
-            Console.WriteLine("Member was added!");
-        }
-        private void SendToAll(byte[] data)
-        {
-            foreach (var member in members)
-            {
-                server.SendAsync(data, data.Length, member);
-            }
-        }
+      
     }
     internal class Program
     {
